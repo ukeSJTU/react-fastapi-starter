@@ -9,11 +9,19 @@ Production-ready, business-neutral FastAPI and PostgreSQL backend foundation.
 - PostgreSQL
 - Docker for the Testcontainers integration tests
 
+Python dependencies are part of the uv workspace at the repository root. The
+workspace owns the shared `.venv`, `.python-version`, and `uv.lock`, while this
+directory keeps the backend package metadata and tool configuration.
+
 ## Setup
+
+From the repository root, `just setup` installs both workspaces and the Git
+hooks. To set up and run only the backend, use the native commands from this
+directory:
 
 ```bash
 cp .env.example .env
-uv sync
+uv sync --frozen
 uv run alembic upgrade head
 uv run fastapi dev
 ```
@@ -50,6 +58,7 @@ uv run python -m scripts.export_openapi
 The command always writes the committed contract to `../openapi.json`. The
 resulting file is the input to the frontend Orval generator.
 
-From the repository root, `just generate` exports the contract and then runs
-the frontend generator. `just check-generated` additionally fails when the
-committed contract or generated client is stale.
+From the repository root, `just dev` starts the backend and frontend in
+parallel. `just generate` exports the contract and then runs the frontend
+generator. `just check-generated` additionally fails when the committed
+contract or generated client is stale.

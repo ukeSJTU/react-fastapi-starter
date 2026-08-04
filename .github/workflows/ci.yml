@@ -9,42 +9,67 @@ permissions:
   contents: read
 
 jobs:
-  backend:
+  repository:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version-file: backend/.python-version
+          python-version-file: .python-version
       - uses: astral-sh/setup-uv@v9
         with:
           enable-cache: true
-          cache-dependency-glob: backend/uv.lock
+          cache-dependency-glob: uv.lock
       - run: uv sync --frozen
-      - run: uv run ruff format --check .
-      - run: uv run ruff check .
-      - run: uv run mypy app scripts tests
-      - run: uv run pytest
+      - run: uv run --frozen prek validate-config prek.toml backend/prek.toml frontend/prek.toml
+      - name: Check repository files
+        run: >-
+          uv run --frozen prek run
+          .:check-json
+          .:check-toml
+          .:check-yaml
+          .:trailing-whitespace
+          .:end-of-file-fixer
+          --all-files
+      - name: Check for hook changes
+        run: |
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .python-version
+      - uses: astral-sh/setup-uv@v9
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv sync --package backend --frozen
+      - run: uv run --frozen ruff format --check .
+        working-directory: backend
+      - run: uv run --frozen ruff check .
+        working-directory: backend
+      - run: uv run --frozen mypy app scripts tests
+        working-directory: backend
+      - run: uv run --frozen pytest
+        working-directory: backend
 
   frontend:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/setup@v1
         with:
           cache: true
-          package-json-file: frontend/package.json
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          package-json-file: package.json
+          cache-dependency-path: pnpm-lock.yaml
           install: false
       - run: pnpm install --frozen-lockfile
-      - run: pnpm check
-      - run: pnpm build
+      - run: pnpm --filter frontend check
+      - run: pnpm --filter frontend build
 
   generated:
     runs-on: ubuntu-latest
@@ -52,25 +77,22 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
-          python-version-file: backend/.python-version
+          python-version-file: .python-version
       - uses: astral-sh/setup-uv@v9
         with:
           enable-cache: true
-          cache-dependency-glob: backend/uv.lock
+          cache-dependency-glob: uv.lock
       - uses: pnpm/setup@v1
         with:
           cache: true
-          package-json-file: frontend/package.json
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          package-json-file: package.json
+          cache-dependency-path: pnpm-lock.yaml
           install: false
-      - run: uv sync --frozen
-        working-directory: backend
+      - run: uv sync --package backend --frozen
       - run: pnpm install --frozen-lockfile
-        working-directory: frontend
-      - run: uv run python -m scripts.export_openapi
+      - run: uv run --frozen python -m scripts.export_openapi
         working-directory: backend
-      - run: pnpm generate
-        working-directory: frontend
+      - run: pnpm --filter frontend generate
       - name: Check generated files
         run: |
           git status --short --untracked-files=all -- openapi.json frontend/src/api/generated frontend/src/routeTree.gen.ts

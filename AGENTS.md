@@ -17,6 +17,7 @@
 仓库采用协调式 monorepo：
 
 - `frontend/` 与 `backend/` 分别拥有自己的依赖、构建、测试和部署边界。
+- 根 `pyproject.toml` 与 `pnpm-workspace.yaml` 只协调 workspace；Python 与 pnpm 分别在根目录共享唯一的 lockfile 和开发环境。
 - 根目录使用 Justfile 提供可选的统一快捷入口；Justfile 只编排 `pnpm`、`uv` 和 Docker Compose 等原生命令，不承载隐藏的业务逻辑。
 - 不安装 `just` 时，开发者仍必须能直接使用各子项目的原生命令完成全部工作。
 - 端到端测试放在根目录 `e2e/`，不归属于前端单元测试。
@@ -25,7 +26,7 @@
 
 ## 固定技术选择
 
-- Python 3.14，使用 `uv` 管理环境和依赖，提交 `.python-version` 与 `uv.lock`。
+- Python 3.14，使用 `uv` workspace 管理环境和依赖，在仓库根目录提交 `.python-version` 与 `uv.lock`。
 - FastAPI + Pydantic v2 + `pydantic-settings`。
 - PostgreSQL + SQLAlchemy 2.x async + psycopg 3 + Alembic。
 - 使用 structlog：本地输出易读日志，生产输出结构化 JSON，并绑定 request ID 和必要的请求上下文。
@@ -101,7 +102,7 @@ backend/
 
 ## 固定技术选择
 
-- Node.js 24 LTS + pnpm；在 `package.json` 中声明 `packageManager` 并提交 `pnpm-lock.yaml`。
+- Node.js 24 LTS + pnpm；在根 `package.json` 中声明 `packageManager`，由根 `pnpm-workspace.yaml` 定义成员并提交根 `pnpm-lock.yaml`。
 - React 19 + TypeScript 7 + Vite。
 - Tailwind CSS 4 + shadcn/ui，使用 Base UI primitives 与 Lucide Icons。
 - TanStack Router 使用 file-based routing。
@@ -156,7 +157,7 @@ frontend/src/
 
 - 根 Justfile 提供 `setup`、`dev`、`check`、`test`、`generate`、`build` 等稳定快捷入口。
 - recipe 应尽量只是组合已有的 `uv`、`pnpm` 和 Docker Compose 命令；子项目原生命令始终可独立运行。
-- `just setup` 使用 `uv tool install prek` 安装 prek，并执行 `prek install --prepare-hooks`。
+- `just setup` 同步全部 uv/pnpm workspace，并使用根 uv 开发依赖执行 `prek install --prepare-hooks`。
 
 ## prek
 
@@ -164,7 +165,7 @@ prek 只管理适合每次 commit 执行的快速检查，并根据暂存文件�
 
 - Python：Ruff。
 - 前端：Oxfmt、Oxlint。
-- 通用检查：YAML、尾随空格、文件末尾换行。
+- 通用检查：JSON、TOML、YAML、尾随空格、文件末尾换行。
 
 mypy、完整 TypeScript 类型检查、测试、构建、OpenAPI/Orval 漂移检查和 Playwright 不进入 pre-commit hook，由完整检查命令和 CI 承担。
 

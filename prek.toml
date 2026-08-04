@@ -1,9 +1,11 @@
-minimum_prek_version = "0.3.6"
-exclude = "^(frontend/src/api/generated/|frontend/src/routeTree\\.gen\\.ts$)"
+minimum_prek_version = "0.4.12"
+exclude = "^(\\.agents/skills/|frontend/src/api/generated/|frontend/src/routeTree\\.gen\\.ts$)"
 
 [[repos]]
 repo = "builtin"
 hooks = [
+  { id = "check-json", exclude = "^frontend/tsconfig.*\\.json$" },
+  { id = "check-toml" },
   { id = "check-yaml" },
   { id = "trailing-whitespace" },
   { id = "end-of-file-fixer" },

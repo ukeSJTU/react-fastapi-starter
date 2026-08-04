@@ -1,0 +1,27 @@
+{
+  "name": "react-fastapi-starter",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter frontend dev",
+    "generate": "pnpm --filter frontend generate",
+    "format": "pnpm --filter frontend format",
+    "lint": "pnpm --filter frontend lint",
+    "typecheck": "pnpm --filter frontend typecheck",
+    "test": "pnpm --filter frontend test",
+    "check": "pnpm --filter frontend check",
+    "build": "pnpm --filter frontend build",
+    "preview": "pnpm --filter frontend preview"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "24",
+      "onFail": "download"
+    }
+  },
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "packageManager": "pnpm@11.18.0",
+  "devDependencies": {}
+}
