@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import * as React from "react"
 
 type Theme = "dark" | "light" | "system"
@@ -17,18 +16,29 @@ type ThemeProviderState = {
 }
 
 const COLOR_SCHEME_QUERY = "(prefers-color-scheme: dark)"
-const THEME_VALUES: Theme[] = ["dark", "light", "system"]
 
 const ThemeProviderContext = React.createContext<
   ThemeProviderState | undefined
 >(undefined)
 
 function isTheme(value: string | null): value is Theme {
-  if (value === null) {
-    return false
-  }
+  return value === "dark" || value === "light" || value === "system"
+}
 
-  return THEME_VALUES.includes(value as Theme)
+function readStoredTheme(storageKey: string) {
+  try {
+    return window.localStorage.getItem(storageKey)
+  } catch {
+    return null
+  }
+}
+
+function storeTheme(storageKey: string, theme: Theme) {
+  try {
+    window.localStorage.setItem(storageKey, theme)
+  } catch {
+    return
+  }
 }
 
 function getSystemTheme(): ResolvedTheme {
@@ -85,7 +95,7 @@ export function ThemeProvider({
   ...props
 }: ThemeProviderProps) {
   const [theme, setThemeState] = React.useState<Theme>(() => {
-    const storedTheme = localStorage.getItem(storageKey)
+    const storedTheme = readStoredTheme(storageKey)
     if (isTheme(storedTheme)) {
       return storedTheme
     }
@@ -95,7 +105,7 @@ export function ThemeProvider({
 
   const setTheme = React.useCallback(
     (nextTheme: Theme) => {
-      localStorage.setItem(storageKey, nextTheme)
+      storeTheme(storageKey, nextTheme)
       setThemeState(nextTheme)
     },
     [storageKey]
@@ -167,7 +177,7 @@ export function ThemeProvider({
                 ? "light"
                 : "dark"
 
-        localStorage.setItem(storageKey, nextTheme)
+        storeTheme(storageKey, nextTheme)
         return nextTheme
       })
     }
@@ -181,7 +191,7 @@ export function ThemeProvider({
 
   React.useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.storageArea !== localStorage) {
+      if (event.storageArea !== window.localStorage) {
         return
       }
 
