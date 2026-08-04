@@ -1,0 +1,8 @@
+exclude = "^(src/api/generated/|src/routeTree\\.gen\\.ts$)"
+
+[[repos]]
+repo = "local"
+hooks = [
+  { id = "oxfmt", name = "oxfmt", entry = "pnpm exec oxfmt --write", language = "system", files = "\\.(astro|cjs|cts|css|gql|graphql|hbs|html|js|json|json5|jsonc|jsx|less|md|mdx|mjs|mts|scss|svelte|toml|ts|tsx|vue|yaml|yml)$" },
+  { id = "oxlint", name = "oxlint", entry = "pnpm exec oxlint --fix", language = "system", files = "\\.[cm]?[jt]sx?$" },
+]

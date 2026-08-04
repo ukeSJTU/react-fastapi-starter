@@ -38,18 +38,13 @@ jobs:
       - uses: actions/checkout@v7
       - uses: pnpm/setup@v1
         with:
-          version: 11.18.0
-          runtime: node@24
           cache: true
           package-json-file: frontend/package.json
           cache-dependency-path: frontend/pnpm-lock.yaml
           install: false
       - run: pnpm install --frozen-lockfile
-      - run: pnpm generate:routes
-      - run: pnpm format:check
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test:coverage
+      - run: pnpm check
+      - run: pnpm build
 
   generated:
     runs-on: ubuntu-latest
@@ -64,8 +59,6 @@ jobs:
           cache-dependency-glob: backend/uv.lock
       - uses: pnpm/setup@v1
         with:
-          version: 11.18.0
-          runtime: node@24
           cache: true
           package-json-file: frontend/package.json
           cache-dependency-path: frontend/pnpm-lock.yaml
@@ -80,6 +73,6 @@ jobs:
         working-directory: frontend
       - name: Check generated files
         run: |
-          git status --short --untracked-files=all -- openapi.json frontend/src/api/generated
-          git diff --exit-code -- openapi.json frontend/src/api/generated
-          test -z "$(git status --porcelain --untracked-files=all -- openapi.json frontend/src/api/generated)"
+          git status --short --untracked-files=all -- openapi.json frontend/src/api/generated frontend/src/routeTree.gen.ts
+          git diff --exit-code -- openapi.json frontend/src/api/generated frontend/src/routeTree.gen.ts
+          test -z "$(git status --porcelain --untracked-files=all -- openapi.json frontend/src/api/generated frontend/src/routeTree.gen.ts)"

@@ -8,15 +8,16 @@
     "clean": "node --input-type=module --eval \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
-    "generate": "orval --fail-on-warnings",
+    "generate": "pnpm generate:api && pnpm generate:routes",
+    "generate:api": "orval --fail-on-warnings",
     "generate:routes": "tsr generate",
     "lint": "oxlint .",
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "check": "pnpm generate:routes && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage",
-    "build": "pnpm clean && pnpm generate:routes && pnpm typecheck && vite build",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage",
+    "build": "pnpm clean && pnpm typecheck && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -60,8 +61,15 @@
     "vite": "^8",
     "vitest": "^4.1.10"
   },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "24",
+      "onFail": "download"
+    }
+  },
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=24 <25"
   },
   "packageManager": "pnpm@11.18.0"
 }
