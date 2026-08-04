@@ -29,10 +29,12 @@ dev = [
 entrypoint = "app.main:app"
 
 [tool.pytest.ini_options]
-addopts = "--cov=app --cov-report=term-missing"
-asyncio_mode = "auto"
+addopts = "--strict-config --strict-markers --cov=app --cov-report=term-missing"
+asyncio_mode = "strict"
+filterwarnings = ["error"]
 markers = ["integration: requires Docker and a real PostgreSQL database"]
 testpaths = ["tests"]
+xfail_strict = true
 
 [tool.coverage.run]
 branch = true
@@ -50,17 +52,34 @@ target-version = "py314"
 select = [
     "ASYNC",
     "B",
+    "C4",
     "DTZ",
     "E",
     "F",
     "FAST",
     "I",
+    "LOG",
+    "PIE",
+    "PT",
+    "RET",
     "RUF",
+    "S",
     "SIM",
+    "T20",
     "UP",
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
+
 [tool.mypy]
+enable_error_code = ["explicit-override"]
+files = ["app", "scripts", "tests"]
+plugins = ["pydantic.mypy"]
 python_version = "3.14"
 strict = true
-files = ["app", "scripts", "tests"]
+warn_unreachable = true
+
+[tool.pydantic-mypy]
+init_typed = true
+warn_required_dynamic_aliases = true

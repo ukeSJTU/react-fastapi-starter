@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
-from pytest import MonkeyPatch
+import pytest
 
 from app.main import create_app
 from scripts import export_openapi
@@ -30,7 +30,7 @@ def test_openapi_operation_ids_are_stable_and_unique() -> None:
 
 def test_openapi_can_be_exported_without_http_server(
     tmp_path: Path,
-    monkeypatch: MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     output = tmp_path / "openapi.json"
     monkeypatch.setattr(export_openapi, "OPENAPI_PATH", output)

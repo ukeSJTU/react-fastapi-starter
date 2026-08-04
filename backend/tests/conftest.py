@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import pytest
+import pytest_asyncio
 from alembic.config import Config
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
@@ -35,7 +36,7 @@ def migrated_database_url(alembic_config: Config) -> Iterator[str]:
         yield database_url
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def database_connection(
     migrated_database_url: str,
 ) -> AsyncIterator[AsyncConnection]:
@@ -52,7 +53,7 @@ async def database_connection(
         await engine.dispose()
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def db_session(
     database_connection: AsyncConnection,
 ) -> AsyncIterator[AsyncSession]:

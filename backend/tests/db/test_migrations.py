@@ -4,7 +4,14 @@ from alembic.script import ScriptDirectory
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from alembic import command
+
 pytestmark = pytest.mark.integration
+
+
+@pytest.mark.usefixtures("migrated_database_url")
+def test_alembic_metadata_matches_migration_head(alembic_config: Config) -> None:
+    command.check(alembic_config)
 
 
 @pytest.mark.asyncio

@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import override
 
 from sqlalchemy import DateTime
 from sqlalchemy.engine.interfaces import Dialect
@@ -15,12 +16,14 @@ class UTCDateTime(TypeDecorator[datetime]):
     impl = DateTime(timezone=True)
     cache_ok = True
 
+    @override
     def process_bind_param(
         self, value: datetime | None, dialect: Dialect
     ) -> datetime | None:
         del dialect
         return as_utc(value) if value is not None else None
 
+    @override
     def process_result_value(
         self, value: datetime | None, dialect: Dialect
     ) -> datetime | None:
