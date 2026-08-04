@@ -1,0 +1,54 @@
+x-backend-build: &backend-build
+  context: .
+  dockerfile: backend/Dockerfile
+
+x-backend-environment: &backend-environment
+  ENVIRONMENT: production
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@db:5432/${POSTGRES_DB:-app}
+  CORS_ORIGINS: "[]"
+
+services:
+  db:
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+
+  migrate:
+    profiles:
+      - tools
+    build: *backend-build
+    environment: *backend-environment
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - alembic
+      - upgrade
+      - head
+    restart: "no"
+
+  backend:
+    build: *backend-build
+    environment: *backend-environment
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+    init: true
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - name: http
+        target: 8080
+        published: "${APP_PORT:-8080}"
+        protocol: tcp
+    init: true
+    restart: unless-stopped

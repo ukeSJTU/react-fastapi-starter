@@ -1,0 +1,15 @@
+**
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!frontend/
+!frontend/**
+
+frontend/.env
+frontend/.env.*
+frontend/coverage/
+frontend/dist/
+frontend/node_modules/
+frontend/src/test/
+frontend/**/*.test.*
+frontend/Dockerfile*

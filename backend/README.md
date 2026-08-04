@@ -17,7 +17,7 @@ directory keeps the backend package metadata and tool configuration.
 
 From the repository root, `just setup` installs both workspaces and the Git
 hooks. To set up and run only the backend, use the native commands from this
-directory:
+directory after PostgreSQL is running:
 
 ```bash
 cp .env.example .env
@@ -25,6 +25,11 @@ uv sync --frozen
 uv run alembic upgrade head
 uv run fastapi dev
 ```
+
+From the repository root, `docker compose up -d --wait db` starts the local
+PostgreSQL service on `127.0.0.1:5432`. The root README documents the separate
+production-like backend and frontend images and the explicit containerized
+migration workflow.
 
 The API is served at `http://127.0.0.1:8000`. Scalar API documentation is
 available at `/docs` in development and test environments. Documentation and

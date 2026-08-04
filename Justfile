@@ -1,6 +1,8 @@
 # Requires just 1.42 or newer for parallel recipes.
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
+production_compose := "docker compose -f compose.yaml -f compose.production.yaml"
+
 setup:
     uv sync --all-packages --frozen
     pnpm install --frozen-lockfile
@@ -66,3 +68,31 @@ _check-frontend:
 [working-directory: "frontend"]
 build:
     pnpm build
+
+# Start the local PostgreSQL service and wait until it is healthy.
+db-up:
+    docker compose up -d --wait db
+
+# Stop local Compose services without deleting database data.
+db-down:
+    docker compose down
+
+# Build the production backend and frontend images.
+container-build:
+    {{ production_compose }} --profile tools --parallel 2 build
+
+# Apply all database migrations with the one-off production image.
+container-migrate:
+    {{ production_compose }} run --build --rm migrate
+
+# Start the production-like stack after migrations have been applied.
+container-up:
+    {{ production_compose }} up --build -d --wait
+
+# Stop the production-like stack without deleting database data.
+container-down:
+    {{ production_compose }} down --remove-orphans
+
+# Follow logs from the production-like stack.
+container-logs:
+    {{ production_compose }} logs --follow
