@@ -2,8 +2,10 @@ import json
 from pathlib import Path
 from typing import Any, cast
 
+from pytest import MonkeyPatch
+
 from app.main import create_app
-from app.scripts.export_openapi import export_openapi
+from scripts import export_openapi
 from tests.factories import build_settings
 
 
@@ -26,10 +28,14 @@ def test_openapi_operation_ids_are_stable_and_unique() -> None:
     assert len(identifiers) == len(set(identifiers))
 
 
-def test_openapi_can_be_exported_without_http_server(tmp_path: Path) -> None:
-    output = tmp_path / "nested" / "openapi.json"
+def test_openapi_can_be_exported_without_http_server(
+    tmp_path: Path,
+    monkeypatch: MonkeyPatch,
+) -> None:
+    output = tmp_path / "openapi.json"
+    monkeypatch.setattr(export_openapi, "OPENAPI_PATH", output)
 
-    export_openapi(create_app(build_settings()), output)
+    export_openapi.export_openapi()
 
     schema = json.loads(output.read_text(encoding="utf-8"))
     assert schema["info"]["title"] == "Backend API"

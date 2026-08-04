@@ -41,7 +41,12 @@ The test suite starts a real PostgreSQL container and applies Alembic migrations
 Export the schema directly from the application without starting an HTTP server:
 
 ```bash
-uv run python -m app.scripts.export_openapi --output openapi.json
+uv run python -m scripts.export_openapi
 ```
 
-The resulting file is suitable as the input to Orval.
+The command always writes the committed contract to `../openapi.json`. The
+resulting file is the input to the frontend Orval generator.
+
+From the repository root, `just generate` exports the contract and then runs
+the frontend generator. `just check-generated` additionally fails when the
+committed contract or generated client is stale.

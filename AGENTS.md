@@ -147,7 +147,7 @@ frontend/src/
 - 保留独立的 `tsc -b` 作为权威类型检查；不要用 Oxlint 的实验性 type-check 替代编译器检查。
 - OpenAPI schema 与 Orval 生成代码都提交到 Git。CI 必须重新生成并检查无漂移。
 - 生成目录视为只读：不得手工编辑、lint 或格式化 Orval 与 TanStack Router 的生成产物。
-- API base URL 使用相对路径，默认依赖同源 `/api` 反向代理，不把环境地址硬编码到前端构建中。
+- Orval 使用内置 Fetch，不设置 base URL 或 mutator。OpenAPI `paths` 是浏览器请求的完整 origin-relative path；`/health` 与 `/api/v1/*` 均由开发和生产反向代理原样转发，不添加、移除或重写 `/api`。
 - 只支持仍在维护的现代 evergreen 浏览器；不为 IE 或旧浏览器默认加入 polyfill。
 
 # 开发工作流与质量门禁
@@ -180,7 +180,7 @@ mypy、完整 TypeScript 类型检查、测试、构建、OpenAPI/Orval 漂移�
 
 - 默认本地开发方式是在 Docker Compose 中运行 PostgreSQL，在宿主机运行 Vite 与 FastAPI，以保留最佳热更新和调试体验。
 - 同时维护独立的前端、后端生产 Dockerfile 和完整全栈 Compose，用于容器化验证与部署起点。
-- 默认生产拓扑为同源：Caddy 服务前端静态文件、处理 SPA fallback，并将 `/api/*` 反向代理到独立 FastAPI 容器。
+- 默认生产拓扑为同源：Caddy 服务前端静态文件、处理 SPA fallback，并将 `/health` 与 `/api/*` 原样反向代理到独立 FastAPI 容器。
 - 前后端镜像保持独立；具体部署平台需要拆分域名时可以在派生项目中调整。
 
 # 明确不默认包含的能力

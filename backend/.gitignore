@@ -13,7 +13,6 @@ wheels/
 .env
 .coverage
 htmlcov/
-openapi.json
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/

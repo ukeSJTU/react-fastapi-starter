@@ -3,3 +3,8 @@ packages: []
 allowBuilds:
   esbuild: true
   msw: false
+
+peerDependencyRules:
+  allowedVersions:
+    # Orval includes TypeDoc even though API docs generation is disabled.
+    "typedoc@0.28.20>typescript": "7"
