@@ -1,14 +1,32 @@
 import pytest
-from httpx import ASGITransport, AsyncClient
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from app.main import create_app
-from tests.factories import build_settings
+pytestmark = pytest.mark.integration
 
 
 @pytest.mark.asyncio
-async def test_alembic_migrates_empty_schema_and_health_uses_postgres(
+async def test_alembic_upgrades_empty_postgres_to_current_head(
+    migrated_database_url: str,
+    alembic_config: Config,
+) -> None:
+    engine = create_async_engine(migrated_database_url)
+    try:
+        async with engine.connect() as connection:
+            revision_result = await connection.execute(
+                text("SELECT version_num FROM alembic_version")
+            )
+
+        current_head = ScriptDirectory.from_config(alembic_config).get_current_head()
+        assert revision_result.scalar_one() == current_head
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_migrated_template_contains_no_business_tables(
     migrated_database_url: str,
 ) -> None:
     engine = create_async_engine(migrated_database_url)
@@ -20,20 +38,7 @@ async def test_alembic_migrates_empty_schema_and_health_uses_postgres(
                     "WHERE schemaname = 'public' ORDER BY tablename"
                 )
             )
-            revision_result = await connection.execute(
-                text("SELECT version_num FROM alembic_version")
-            )
 
         assert list(table_result.scalars()) == ["alembic_version"]
-        assert revision_result.scalar_one() == "20260804_0001"
     finally:
         await engine.dispose()
-
-    application = create_app(build_settings(database_url=migrated_database_url))
-    transport = ASGITransport(app=application)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get("/health")
-
-    assert response.status_code == 200
-    assert response.json() == {"status": "healthy"}
-    await application.state.engine.dispose()

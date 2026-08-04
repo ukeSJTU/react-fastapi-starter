@@ -1,4 +1,19 @@
+from contextlib import AbstractAsyncContextManager
+from typing import Protocol
+
+from fastapi import FastAPI
+from httpx import AsyncClient
+
 from app.core.config import Environment, Settings
+
+
+class AppClientFactory(Protocol):
+    def __call__(
+        self,
+        application: FastAPI,
+        *,
+        raise_app_exceptions: bool = True,
+    ) -> AbstractAsyncContextManager[AsyncClient]: ...
 
 
 def build_settings(

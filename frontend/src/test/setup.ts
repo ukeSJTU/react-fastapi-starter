@@ -1,7 +1,6 @@
 import "@testing-library/jest-dom/vitest"
-import { faker } from "@faker-js/faker"
 import { cleanup } from "@testing-library/react"
-import { afterAll, afterEach, beforeAll, beforeEach } from "vitest"
+import { afterAll, afterEach, beforeAll } from "vitest"
 
 import { server } from "@/test/server"
 
@@ -53,10 +52,6 @@ Object.defineProperty(window, "scrollTo", {
 
 beforeAll(() => {
   server.listen({ onUnhandledRequest: "error" })
-})
-
-beforeEach(() => {
-  faker.seed(42)
 })
 
 afterEach(() => {

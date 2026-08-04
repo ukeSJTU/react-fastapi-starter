@@ -10,12 +10,7 @@ function ProviderProbe() {
   const { theme } = useTheme()
 
   return (
-    <output
-      data-query-count={queryClient.getQueryCache().getAll().length}
-      data-testid="provider-state"
-    >
-      {`theme:${theme}`}
-    </output>
+    <output>{`theme:${theme};queries:${queryClient.getQueryCache().getAll().length}`}</output>
   )
 }
 
@@ -23,8 +18,8 @@ describe("AppProviders", () => {
   it("provides query and theme contexts", () => {
     render(<ProviderProbe />)
 
-    expect(screen.getByTestId("provider-state")).toHaveTextContent(
-      "theme:system"
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "theme:system;queries:0"
     )
   })
 })

@@ -13,8 +13,9 @@
     "lint": "oxlint .",
     "typecheck": "tsc -b",
     "test": "vitest run",
+    "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "check": "pnpm generate:routes && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
+    "check": "pnpm generate:routes && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage",
     "build": "pnpm clean && pnpm generate:routes && pnpm typecheck && vite build",
     "preview": "vite preview"
   },

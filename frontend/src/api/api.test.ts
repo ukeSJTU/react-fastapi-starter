@@ -5,6 +5,8 @@ import {
   getGetHealthQueryKey,
   getGetHealthUrl,
 } from "@/api/generated/endpoints/health/health"
+import { getGetHealthMockHandler } from "@/api/generated/endpoints/health/health.msw"
+import { server } from "@/test/server"
 
 describe("generated API contract", () => {
   it("preserves origin-relative OpenAPI paths", () => {
@@ -15,10 +17,12 @@ describe("generated API contract", () => {
     expect(getGetHealthQueryKey()).toEqual(["getHealth"])
   })
 
-  it("uses generated MSW handlers for API requests", async () => {
+  it("sends requests through an explicitly declared MSW handler", async () => {
+    server.use(getGetHealthMockHandler({ status: "healthy" }))
+
     const response = await getHealth()
 
     expect(response.status).toBe(200)
-    expect(response.data.status).toMatch(/^(healthy|unavailable)$/)
+    expect(response.data).toEqual({ status: "healthy" })
   })
 })

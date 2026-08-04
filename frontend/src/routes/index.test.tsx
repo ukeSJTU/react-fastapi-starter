@@ -16,7 +16,7 @@ describe("HomePage", () => {
     ).toBeInTheDocument()
   })
 
-  it("keeps the theme control available", async () => {
+  it("switches to the dark theme", async () => {
     const { user } = render(<HomePage />)
 
     await user.click(screen.getByRole("button", { name: "Toggle theme" }))

@@ -35,6 +35,9 @@ uv run pytest
 ```
 
 The test suite starts a real PostgreSQL container and applies Alembic migrations.
+For a fast TDD loop that excludes Docker-backed integration tests, run
+`uv run pytest -m "not integration"`. Always run the complete suite before
+finishing a change.
 
 ## Export OpenAPI
 
