@@ -8,3 +8,12 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Local configuration and test output
+.env
+.coverage
+htmlcov/
+openapi.json
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/

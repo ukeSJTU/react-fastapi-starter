@@ -1,7 +1,65 @@
 [project]
 name = "backend"
 version = "0.1.0"
-description = "Add your description here"
+description = "Production-ready FastAPI and PostgreSQL backend starter"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "alembic>=1.18.5",
+    "fastapi[standard-no-fastapi-cloud-cli]>=0.141.1",
+    "psycopg[binary]>=3.3.4",
+    "pydantic-settings>=2.14.2",
+    "scalar-fastapi>=1.8.2",
+    "sqlalchemy[asyncio]>=2.0.51",
+    "structlog>=26.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "mypy>=2.3.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.1",
+    "testcontainers[postgres]>=4.15.0",
+]
+
+[tool.fastapi]
+entrypoint = "app.main:app"
+
+[tool.pytest.ini_options]
+addopts = "--cov=app --cov-report=term-missing"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["app"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py314"
+
+[tool.ruff.lint]
+select = [
+    "ASYNC",
+    "B",
+    "DTZ",
+    "E",
+    "F",
+    "FAST",
+    "I",
+    "RUF",
+    "SIM",
+    "UP",
+]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+files = ["app", "tests"]
