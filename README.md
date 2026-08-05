@@ -3,6 +3,9 @@
 A modern, business-neutral foundation for React and FastAPI applications. The
 frontend and backend keep independent dependency, build, test, and deployment
 boundaries while sharing coordinated workspace tooling at the repository root.
+See [`frontend/README.md`](frontend/README.md) and
+[`backend/README.md`](backend/README.md) for package-specific setup, layout,
+and quality checks.
 
 ## Requirements
 
