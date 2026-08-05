@@ -1,3 +1,21 @@
+# 速览
+
+以下是风险最高、必须遵守的规则，供不通读全文时快速核对；每条在正文都有更完整的说明。
+
+- 保持业务无关：不要预置认证、用户、商品、订单、后台管理等领域概念，只在任务明确要求时才添加。
+- 不要因为本文描述了目标架构，就在无关任务中抢先做全仓重构或补齐未实现的能力；开始修改前先检查当前实现、配置和 lockfile。
+- 修改 API schema、operationId 或 camelCase alias 时，必须同步导出 OpenAPI、运行 Orval，并更新前端调用与测试。
+- 修改数据库模型时必须生成并检查 Alembic revision；不得用 `create_all` 替代 migration。
+- 不在应用启动时执行有副作用的 schema migration、seed 或外部资源创建。
+- 不手工修改 lockfile（`uv.lock`、`pnpm-lock.yaml`）或任何生成产物（`frontend/src/api/generated`、`routeTree.gen.ts`、`openapi.json`）；一律使用对应的包管理器或生成命令。
+- 不手动创建、推送或删除版本 tag，也不要绕开 GitHub Actions 的 Release workflow 直接发布 Release。
+- 本地开发与生产容器的具体命令以根目录 `development.md`、`production.md` 为准，不要重复写进 `README.md` 或本文件。
+- 引入新的生产依赖前，必须说明它解决的普遍问题以及为什么现有技术栈不足。
+- 严格控制任务范围：先复用现有依赖、组件、配置和模式，不为假设中的未来需求预建抽象。
+- 提交前运行与改动范围相称的最快检查；交付前运行完整、与风险相称的检查并报告结果。
+- 工作区可能包含用户未提交的修改；保留无关改动，不覆盖、不回滚、不顺手格式化任务范围之外的文件。
+- 使用 git conventional commit messages。
+
 # 项目定位
 
 本项目维护一个有明确技术偏好、现代、精简且可用于生产项目的 React + FastAPI 全栈母模板。它首先服务于个人新项目，也应具备未来公开使用的质量。
@@ -12,7 +30,9 @@
 
 开始修改前先检查当前实现、配置和 lockfile。lockfile 与实际配置是具体版本的事实来源；本文主要定义长期方向和边界。
 
-# 仓库结构与边界
+# 技术栈与架构约束
+
+## 仓库结构
 
 仓库采用协调式 monorepo：
 
@@ -22,9 +42,9 @@
 - 不安装 `just` 时，开发者仍必须能直接使用各子项目的原生命令完成全部工作。
 - 端到端测试放在根目录 `e2e/`，不归属于前端单元测试。
 
-# 后端
+## 后端
 
-## 固定技术选择
+### 固定技术选择
 
 - Python 3.14，使用 `uv` workspace 管理环境和依赖，在仓库根目录提交 `.python-version` 与 `uv.lock`。
 - FastAPI + Pydantic v2 + `pydantic-settings`。
@@ -33,7 +53,7 @@
 - Ruff 负责 lint、import 排序和格式化；mypy 负责严格类型检查。
 - pytest、pytest-asyncio、HTTPX 和 Testcontainers 组成后端测试基础。
 
-## 代码组织
+### 代码组织
 
 后端使用轻量分层、按需抽象的结构，目标形态如下：
 
@@ -65,14 +85,14 @@ backend/
 - AsyncSession 代码不得依赖会触发隐式 I/O 的 lazy loading；查询需要明确表达所需关系。
 - migration 不得在 FastAPI startup hook 中自动执行。开发快捷命令可以在启动前迁移；生产迁移必须由部署步骤或一次性 job 显式执行。
 
-## 配置
+### 配置
 
 - 使用唯一、强类型的 Pydantic `Settings` 对象。
 - 本地开发可以读取不提交的 `.env`，仓库提供 `.env.example`。
 - 测试显式覆盖配置；生产配置和 secret 通过环境注入。
 - 不使用 `development.py`、`production.py` 等多套 Python 配置模块。
 
-## HTTP API 约定
+### HTTP API 约定
 
 - 业务 API 统一位于 `/api/v1`。
 - `GET /health` 位于业务版本之外，同时检查应用和 PostgreSQL；依赖不可用时返回 `503`，响应不得泄露连接信息或内部异常。
@@ -85,22 +105,22 @@ backend/
 - 统一错误响应标准及其第三方库尚未决定。没有明确任务时，不要自行引入 RFC 9457 实现或新的错误框架。
 - CORS 保持满足本地联调和显式部署需求的简单配置，不为假设中的跨域场景设计复杂策略。
 
-## API 文档
+### API 文档
 
 - 开发与测试环境使用 `scalar-fastapi`，在 `/docs` 提供唯一的 Scalar 文档 UI，在 `/openapi.json` 提供 schema。
 - 禁用 FastAPI 自带的 Swagger UI 和 ReDoc。
 - 生产环境完全不挂载 `/docs` 与 `/openapi.json`，也不提供重新开启它们的环境变量。
 - 构建期 OpenAPI 导出通过 Python 命令直接读取应用 schema，不依赖已启动的 HTTP 服务。
 
-## 后端测试
+### 后端测试
 
 - 数据库集成测试必须使用真实 PostgreSQL，不使用 SQLite 模拟 PostgreSQL 行为。
 - Testcontainers 启动临时数据库，并通过 Alembic migration 建立 schema；测试使用事务或 schema 隔离。
 - 纯函数和无 I/O service 可以使用单元测试与 mock，但 mock 不能替代数据库集成测试。
 
-# 前端
+## 前端
 
-## 固定技术选择
+### 固定技术选择
 
 - Node.js 24 LTS + pnpm；在根 `package.json` 中声明 `packageManager`，由根 `pnpm-workspace.yaml` 定义成员并提交根 `pnpm-lock.yaml`。
 - React 19 + TypeScript 7 + Vite。
@@ -112,7 +132,7 @@ backend/
 - Vitest + React Testing Library + MSW 负责单元和组件测试；Playwright 负责少量全栈 smoke tests。
 - Oxfmt 负责格式化、import 排序和 Tailwind CSS class 排序；Oxlint + `oxlint-tsgolint` 负责 lint 和类型感知规则。不要引入 ESLint 或 Prettier。
 
-## 源码组织
+### 源码组织
 
 前端延续轻量分层、按需抽象：
 
@@ -142,7 +162,7 @@ frontend/src/
 - shadcn 生成到仓库中的组件属于项目源码，可以修改；不要叠加 MUI、Ant Design 等整套组件库。
 - 母模板首页暂时保持极简且业务无关，不要求承担健康检查或技术演示职责。
 
-## TypeScript 与生成代码
+### TypeScript 与生成代码
 
 - TypeScript 保持 strict，并启用 `noUncheckedIndexedAccess` 与 `exactOptionalPropertyTypes`。
 - 保留独立的 `tsc -b` 作为权威类型检查；不要用 Oxlint 的实验性 type-check 替代编译器检查。
@@ -151,7 +171,14 @@ frontend/src/
 - Orval 使用内置 Fetch，不设置 base URL 或 mutator。OpenAPI `paths` 是浏览器请求的完整 origin-relative path；`/health` 与 `/api/v1/*` 均由开发和生产反向代理原样转发，不添加、移除或重写 `/api`。
 - 只支持仍在维护的现代 evergreen 浏览器；不为 IE 或旧浏览器默认加入 polyfill。
 
-# 开发工作流与质量门禁
+## 部署与生产拓扑
+
+- 默认本地开发方式是在 Docker Compose 中运行 PostgreSQL，在宿主机运行 Vite 与 FastAPI，以保留最佳热更新和调试体验。
+- 同时维护独立的前端、后端生产 Dockerfile 和完整全栈 Compose，用于容器化验证与部署起点。
+- 默认生产拓扑为同源：Caddy 服务前端静态文件、处理 SPA fallback，并将 `/health` 与 `/api/*` 原样反向代理到独立 FastAPI 容器。
+- 前后端镜像保持独立；具体部署平台需要拆分域名时可以在派生项目中调整。
+
+# 工作流与代理规则
 
 ## Justfile
 
@@ -167,7 +194,11 @@ prek 只管理适合每次 commit 执行的快速检查，并根据暂存文件�
 - 前端：Oxfmt、Oxlint。
 - 通用检查：JSON、TOML、YAML、尾随空格、文件末尾换行。
 
-mypy、完整 TypeScript 类型检查、测试、构建、OpenAPI/Orval 漂移检查和 Playwright 不进入 pre-commit hook，由完整检查命令和 CI 承担。
+mypy、完整 TypeScript 类型检查、测试、构建、OpenAPI/Orval 漂移检查和 Playwright 不进入 pre-commit hook。
+
+## pre-push
+
+pre-push hook 在 pre-commit 检查之外，额外运行后端与前端类型检查（mypy、`tsc -b`）、不依赖 Docker 的单元测试（`pytest -m "not integration"`、`vitest run`），以及 e2e 目录的 TypeScript 类型检查。构建产物、OpenAPI/Orval 漂移检查、Docker 依赖的集成测试和 Playwright 仍只在完整检查命令（`just check`）与 CI 中运行，不进入任何 Git hook。
 
 ## 测试与 CI
 
@@ -177,14 +208,12 @@ mypy、完整 TypeScript 类型检查、测试、构建、OpenAPI/Orval 漂移�
 - CI 不负责部署或推送镜像；母模板不绑定云平台。
 - 使用 Dependabot 管理 pnpm、uv、GitHub Actions 和 Docker 依赖更新。默认创建 PR，不自动合并。
 
-# 本地运行与部署
+## 发布
 
-- 默认本地开发方式是在 Docker Compose 中运行 PostgreSQL，在宿主机运行 Vite 与 FastAPI，以保留最佳热更新和调试体验。
-- 同时维护独立的前端、后端生产 Dockerfile 和完整全栈 Compose，用于容器化验证与部署起点。
-- 默认生产拓扑为同源：Caddy 服务前端静态文件、处理 SPA fallback，并将 `/health` 与 `/api/*` 原样反向代理到独立 FastAPI 容器。
-- 前后端镜像保持独立；具体部署平台需要拆分域名时可以在派生项目中调整。
+- 版本发布通过 GitHub Actions 的 Release workflow（`workflow_dispatch`）触发，在 `main` 上输入下一个 SemVer 版本号；不要手动创建、推送或删除版本 tag，也不要绕开该 workflow 直接发布 GitHub Release。
+- 已发布的 tag 视为不可变，修正错误发布时新增一个 patch 版本。
 
-# 明确不默认包含的能力
+## 明确不默认包含的能力
 
 除非具体任务明确要求，不要给母模板加入：
 
@@ -197,17 +226,18 @@ mypy、完整 TypeScript 类型检查、测试、构建、OpenAPI/Orval 漂移�
 
 引入新的生产依赖前，必须说明它解决的普遍问题以及为什么现有技术栈不足。不要为假设中的未来需求预建抽象。
 
-# 文档、许可证与维护策略
+## 文档与许可证策略
 
+- 根目录 `README.md` 保持精简的入口页，通过链接指向 `development.md`（本地开发）、`production.md`（生产容器与发布）、`frontend/README.md`、`backend/README.md`。`development.md`、`production.md` 是各自主题的权威操作文档；具体命令写入对应文件，不要塞回 `README.md` 或本文件。
 - 代码标识符、代码注释、运行时错误信息、README 和公开文档统一使用英文；本 `AGENTS.md` 使用中文。
 - 默认许可证为 MIT。
 - `main` 始终代表当前推荐的新项目起点。母模板不承诺为已派生项目提供自动升级路径、向后兼容层或 migration 工具。
 - 对现有首页、配置和 API 做修改时，继续使用通用命名，不把模板包装成虚构产品。
 
-# 代理工作原则
+## 代理工作原则
 
 - 严格控制任务范围，先复用现有依赖、组件、配置和模式。
-- 使用 git conventional commit messages
+- 使用 git conventional commit messages。
 - 不因本文描述了目标架构而在无关任务中进行全仓重构。
 - 不手工修改 lockfile 或生成代码；使用对应包管理器或生成命令。
 - 不在应用启动时执行有副作用的 schema migration、seed 或外部资源创建。
