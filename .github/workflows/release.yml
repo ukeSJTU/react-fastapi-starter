@@ -1,0 +1,204 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable SemVer without the v prefix (for example, 0.1.0)
+        required: true
+        type: string
+      summary:
+        description: Optional Markdown summary shown before the generated notes
+        required: false
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Validate and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_REF: ${{ github.ref }}
+      TARGET_SHA: ${{ github.sha }}
+      VERSION: ${{ inputs.version }}
+    steps:
+      - name: Check out the release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Validate release request
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$TARGET_REF" != "refs/heads/main" ]]; then
+            echo "Releases must be dispatched from main, not $TARGET_REF." >&2
+            exit 1
+          fi
+
+          if [[ ! "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Version must be canonical stable SemVer without a v prefix." >&2
+            exit 1
+          fi
+
+          tag="v${VERSION}"
+          remote_tags="$RUNNER_TEMP/release-remote-tags.txt"
+          gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/git/matching-refs/tags/v?per_page=100" \
+            --jq '.[].ref' > "$remote_tags"
+
+          if git show-ref --verify --quiet "refs/tags/${tag}"; then
+            echo "Tag $tag already exists in the checked-out repository." >&2
+            exit 1
+          fi
+
+          if grep -Fxq "refs/tags/${tag}" "$remote_tags"; then
+            echo "Tag $tag already exists on GitHub." >&2
+            exit 1
+          fi
+
+          highest_version="$(
+            sed -nE \
+              's#^refs/tags/v((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$#\1#p' \
+              "$remote_tags" | sort -V | tail -n 1
+          )"
+
+          if [[ -n "$highest_version" ]]; then
+            greatest_version="$(printf '%s\n%s\n' "$highest_version" "$VERSION" | sort -V | tail -n 1)"
+            if [[ "$VERSION" == "$highest_version" || "$VERSION" != "$greatest_version" ]]; then
+              echo "Version $VERSION must be greater than the highest release, $highest_version." >&2
+              exit 1
+            fi
+          fi
+
+          remote_main_sha="$(
+            gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha'
+          )"
+          if [[ "$TARGET_SHA" != "$remote_main_sha" ]]; then
+            echo "main advanced from $TARGET_SHA to $remote_main_sha; start a new release run." >&2
+            exit 1
+          fi
+
+          if [[ "$(git rev-parse HEAD)" != "$TARGET_SHA" ]]; then
+            echo "The checked-out commit does not match the workflow target." >&2
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$TARGET_SHA" refs/remotes/origin/main; then
+            echo "The target commit is not reachable from main." >&2
+            exit 1
+          fi
+
+          successful_ci_shas="$(
+            gh api --method GET \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs" \
+              -f head_sha="$TARGET_SHA" \
+              -f event=push \
+              -f status=success \
+              -f per_page=100 \
+              --jq '.workflow_runs[] | select(.event == "push" and .conclusion == "success") | .head_sha'
+          )"
+          if ! grep -Fxq "$TARGET_SHA" <<< "$successful_ci_shas"; then
+            echo "No successful CI push run exists for $TARGET_SHA." >&2
+            exit 1
+          fi
+
+      - name: Generate release notes
+        uses: orhun/git-cliff-action@f50e11560dce63f7c33227798f90b924471a88b5 # v4.8.0
+        with:
+          args: --unreleased --output release-notes.generated.md
+          config: cliff.toml
+          github_token: ${{ github.token }}
+          version: v2.13.1
+
+      - name: Add release summary
+        shell: bash
+        env:
+          RELEASE_SUMMARY: ${{ inputs.summary }}
+        run: |
+          set -euo pipefail
+
+          if [[ -n "$RELEASE_SUMMARY" ]]; then
+            printf '%s\n\n' "$RELEASE_SUMMARY" > release-notes.md
+          else
+            : > release-notes.md
+          fi
+          sed '/./,$!d' release-notes.generated.md >> release-notes.md
+
+      - name: Revalidate and publish release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag="v${VERSION}"
+          remote_tags="$RUNNER_TEMP/release-remote-tags-final.txt"
+          gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/git/matching-refs/tags/v?per_page=100" \
+            --jq '.[].ref' > "$remote_tags"
+
+          if grep -Fxq "refs/tags/${tag}" "$remote_tags"; then
+            echo "Tag $tag was created on GitHub while this workflow was running." >&2
+            exit 1
+          fi
+
+          highest_version="$(
+            sed -nE \
+              's#^refs/tags/v((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))$#\1#p' \
+              "$remote_tags" | sort -V | tail -n 1
+          )"
+          if [[ -n "$highest_version" ]]; then
+            greatest_version="$(printf '%s\n%s\n' "$highest_version" "$VERSION" | sort -V | tail -n 1)"
+            if [[ "$VERSION" == "$highest_version" || "$VERSION" != "$greatest_version" ]]; then
+              echo "Version $VERSION is no longer greater than the highest release, $highest_version." >&2
+              exit 1
+            fi
+          fi
+
+          remote_main_sha="$(
+            gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha'
+          )"
+          if [[ "$TARGET_SHA" != "$remote_main_sha" ]]; then
+            echo "main advanced from $TARGET_SHA to $remote_main_sha; start a new release run." >&2
+            exit 1
+          fi
+
+          if git show-ref --verify --quiet "refs/tags/${tag}"; then
+            echo "Tag $tag was created while this workflow was running." >&2
+            exit 1
+          fi
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${tag}" >/dev/null 2>&1; then
+            echo "Tag $tag was created on GitHub while this workflow was running." >&2
+            exit 1
+          fi
+
+          successful_ci_shas="$(
+            gh api --method GET \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs" \
+              -f head_sha="$TARGET_SHA" \
+              -f event=push \
+              -f status=success \
+              -f per_page=100 \
+              --jq '.workflow_runs[] | select(.event == "push" and .conclusion == "success") | .head_sha'
+          )"
+          if ! grep -Fxq "$TARGET_SHA" <<< "$successful_ci_shas"; then
+            echo "The successful CI result for $TARGET_SHA is no longer available." >&2
+            exit 1
+          fi
+
+          gh release create "$tag" \
+            --target "$TARGET_SHA" \
+            --title "$tag" \
+            --notes-file release-notes.md \
+            --latest

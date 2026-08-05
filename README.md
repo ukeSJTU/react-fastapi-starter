@@ -146,3 +146,22 @@ low-level runner at it:
 ```bash
 PLAYWRIGHT_BASE_URL=http://127.0.0.1:8080 pnpm test:e2e:run -- --headed
 ```
+
+## Releases
+
+The repository uses one stable SemVer release line. Tags have the form
+`vMAJOR.MINOR.PATCH`; Git tags and GitHub Releases are the authoritative version
+source, and package metadata is not used to track repository releases.
+
+To publish, open the **Release** workflow in GitHub Actions, choose `main`, and
+enter the next version without the `v` prefix. An optional Markdown summary can
+be placed before the generated notes. The workflow only publishes the current
+`main` commit after the exact commit has passed the complete **CI** workflow.
+It rejects existing or non-increasing versions and stops if `main` advances
+during the run.
+
+Before publishing the first release, enable GitHub Immutable Releases in the
+repository settings. Published tags are never moved, deleted, or reused; ship a
+new patch release to correct a faulty release. Releases contain GitHub's source
+archives and generated notes only—packages, images, and other build artifacts
+are not published.
