@@ -99,56 +99,36 @@ jobs:
           git diff --exit-code -- openapi.json frontend/src/api/generated frontend/src/routeTree.gen.ts
           test -z "$(git status --porcelain --untracked-files=all -- openapi.json frontend/src/api/generated frontend/src/routeTree.gen.ts)"
 
-  containers:
+  e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
-      APP_PORT: "18080"
       POSTGRES_PASSWORD: 0123456789abcdef0123456789abcdef
     steps:
       - uses: actions/checkout@v7
+      - uses: pnpm/setup@v1
+        with:
+          cache: true
+          package-json-file: package.json
+          cache-dependency-path: pnpm-lock.yaml
+          install: false
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:e2e
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
       - name: Validate local Compose configuration
         run: docker compose config --quiet
       - name: Validate production Compose configuration
         run: docker compose -f compose.yaml -f compose.production.yaml config --quiet
-      - name: Build production images
-        run: >-
-          docker compose
-          -f compose.yaml
-          -f compose.production.yaml
-          --profile tools
-          --parallel 2
-          build
-      - name: Apply database migrations
-        run: >-
-          docker compose
-          -f compose.yaml
-          -f compose.production.yaml
-          run --rm migrate
-      - name: Start production stack
-        run: >-
-          docker compose
-          -f compose.yaml
-          -f compose.production.yaml
-          up --detach --wait --no-build
-      - name: Smoke test frontend and API health
-        run: |
-          curl --fail --silent --show-error "http://127.0.0.1:${APP_PORT}/" > /dev/null
-          curl --fail --silent --show-error "http://127.0.0.1:${APP_PORT}/health"
-          openapi_status="$(
-            curl --silent --output /dev/null --write-out '%{http_code}' \
-              "http://127.0.0.1:${APP_PORT}/openapi.json"
-          )"
-          test "${openapi_status}" = "404"
-      - name: Show container logs on failure
+      - name: Run production-stack smoke tests
+        run: pnpm test:e2e
+      - name: Upload failure diagnostics
         if: failure()
-        run: |
-          docker compose -f compose.yaml -f compose.production.yaml ps
-          docker compose -f compose.yaml -f compose.production.yaml logs --no-color
-      - name: Clean up containers and volumes
-        if: always()
-        run: >-
-          docker compose
-          -f compose.yaml
-          -f compose.production.yaml
-          down --volumes --remove-orphans
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

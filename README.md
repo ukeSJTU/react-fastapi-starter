@@ -122,3 +122,22 @@ Run the backend and frontend tests without generated-code drift checks:
 ```bash
 just test
 ```
+
+Run the Chromium smoke tests against a fresh production-like stack:
+
+```bash
+just test-e2e
+```
+
+The E2E command builds the production images, applies Alembic migrations to an
+isolated PostgreSQL volume, starts the stack on a dynamically assigned port,
+and removes its temporary containers, images, and volumes when the run
+finishes. Install the matching Chromium binary with
+`pnpm exec playwright install chromium` when not using `just setup`.
+
+For interactive test development, start a stack separately and point the
+low-level runner at it:
+
+```bash
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:8080 pnpm test:e2e:run -- --headed
+```

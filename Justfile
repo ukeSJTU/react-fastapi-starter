@@ -6,6 +6,7 @@ production_compose := "docker compose -f compose.yaml -f compose.production.yaml
 setup:
     uv sync --all-packages --frozen
     pnpm install --frozen-lockfile
+    pnpm exec playwright install chromium
     uv run --frozen prek install --prepare-hooks
 
 [parallel]
@@ -50,7 +51,7 @@ check: check-generated && _check-code
 
 [private]
 [parallel]
-_check-code: _check-backend _check-frontend
+_check-code: _check-backend _check-frontend _check-e2e
 
 [private]
 [working-directory: "backend"]
@@ -65,9 +66,17 @@ _check-backend:
 _check-frontend:
     pnpm check
 
+[private]
+_check-e2e:
+    pnpm check:e2e
+
 [working-directory: "frontend"]
 build:
     pnpm build
+
+# Run Chromium smoke tests against an isolated production-like stack.
+test-e2e:
+    pnpm test:e2e
 
 # Start the local PostgreSQL service and wait until it is healthy.
 db-up:

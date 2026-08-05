@@ -4,11 +4,18 @@
   "scripts": {
     "dev": "pnpm --filter frontend dev",
     "generate": "pnpm --filter frontend generate",
-    "format": "pnpm --filter frontend format",
-    "lint": "pnpm --filter frontend lint",
-    "typecheck": "pnpm --filter frontend typecheck",
+    "format": "pnpm --filter frontend format && pnpm format:e2e",
+    "format:e2e": "oxfmt --write .oxfmtrc.json playwright.config.ts tsconfig.e2e.json e2e",
+    "format:check:e2e": "oxfmt --check .oxfmtrc.json playwright.config.ts tsconfig.e2e.json e2e",
+    "lint": "pnpm --filter frontend lint && pnpm lint:e2e",
+    "lint:e2e": "oxlint playwright.config.ts e2e",
+    "typecheck": "pnpm --filter frontend typecheck && pnpm typecheck:e2e",
+    "typecheck:e2e": "tsc -p tsconfig.e2e.json",
     "test": "pnpm --filter frontend test",
-    "check": "pnpm --filter frontend check",
+    "test:e2e": "node e2e/run.mjs",
+    "test:e2e:run": "playwright test",
+    "check": "pnpm --filter frontend check && pnpm check:e2e",
+    "check:e2e": "pnpm format:check:e2e && pnpm lint:e2e && pnpm typecheck:e2e",
     "build": "pnpm --filter frontend build",
     "preview": "pnpm --filter frontend preview"
   },
@@ -23,5 +30,11 @@
     "node": ">=24 <25"
   },
   "packageManager": "pnpm@11.18.0",
-  "devDependencies": {}
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^24.13.3",
+    "oxfmt": "^0.61.0",
+    "oxlint": "^1.76.0",
+    "typescript": "~7.0.2"
+  }
 }
