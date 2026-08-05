@@ -1,8 +1,14 @@
-exclude = "^(src/api/generated/|src/routeTree\\.gen\\.ts$)"
+default_stages = ["pre-commit"]
 
 [[repos]]
 repo = "local"
 hooks = [
-  { id = "oxfmt", name = "oxfmt", entry = "pnpm exec oxfmt --write", language = "system", files = "\\.(astro|cjs|cts|css|gql|graphql|hbs|html|js|json|json5|jsonc|jsx|less|md|mdx|mjs|mts|scss|svelte|toml|ts|tsx|vue|yaml|yml)$" },
-  { id = "oxlint", name = "oxlint", entry = "pnpm exec oxlint --fix", language = "system", files = "\\.[cm]?[jt]sx?$" },
+  { id = "oxfmt", name = "oxfmt", entry = "pnpm exec oxfmt --write", language = "system", files = "\\.(astro|cjs|cts|css|gql|graphql|hbs|html|js|json|json5|jsonc|jsx|less|md|mdx|mjs|mts|scss|svelte|toml|ts|tsx|vue|yaml|yml)$", exclude = "^(src/api/generated/|src/routeTree\\.gen\\.ts$)" },
+  { id = "oxlint", name = "oxlint", entry = "pnpm exec oxlint --fix", language = "system", files = "\\.[cm]?[jt]sx?$", exclude = "^(src/api/generated/|src/routeTree\\.gen\\.ts$)" },
+  { id = "typecheck", name = "typecheck", entry = "pnpm typecheck", language = "system", pass_filenames = false, files = "^(package\\.json|tsconfig.*\\.json|tsr\\.config\\.json|orval\\.config\\.ts|vite\\.config\\.ts|vitest\\.config\\.ts|src/.*\\.(ts|tsx))$", stages = [
+    "pre-push",
+  ] },
+  { id = "vitest", name = "vitest", entry = "pnpm test", language = "system", pass_filenames = false, files = "^(package\\.json|tsconfig.*\\.json|vitest\\.config\\.ts|src/.*\\.(ts|tsx))$", stages = [
+    "pre-push",
+  ] },
 ]

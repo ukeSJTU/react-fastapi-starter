@@ -1,12 +1,44 @@
 minimum_prek_version = "0.4.12"
+default_stages = ["pre-commit"]
+default_install_hook_types = ["pre-commit", "pre-push"]
 exclude = "^(\\.agents/skills/|frontend/src/api/generated/|frontend/src/routeTree\\.gen\\.ts$)"
 
 [[repos]]
 repo = "builtin"
 hooks = [
-  { id = "check-json", exclude = "^frontend/tsconfig.*\\.json$" },
-  { id = "check-toml" },
-  { id = "check-yaml" },
-  { id = "trailing-whitespace" },
-  { id = "end-of-file-fixer" },
+  { id = "check-case-conflict", stages = ["pre-commit"] },
+  { id = "check-json", exclude = "^frontend/tsconfig.*\\.json$", stages = ["pre-commit"] },
+  { id = "check-merge-conflict", stages = ["pre-commit"] },
+  { id = "check-toml", stages = ["pre-commit"] },
+  { id = "check-yaml", stages = ["pre-commit"] },
+  { id = "trailing-whitespace", stages = ["pre-commit"] },
+  { id = "end-of-file-fixer", stages = ["pre-commit"] },
+]
+
+[[repos]]
+repo = "local"
+hooks = [
+  {
+    id = "oxfmt-e2e",
+    name = "oxfmt e2e",
+    entry = "pnpm exec oxfmt --write",
+    language = "system",
+    files = "^(\\.oxfmtrc\\.json|playwright\\.config\\.ts|tsconfig\\.e2e\\.json|e2e/.*\\.(mjs|ts))$",
+  },
+  {
+    id = "oxlint-e2e",
+    name = "oxlint e2e",
+    entry = "pnpm exec oxlint --fix",
+    language = "system",
+    files = "^(playwright\\.config\\.ts|e2e/.*\\.(mjs|ts))$",
+  },
+  {
+    id = "typecheck-e2e",
+    name = "typecheck e2e",
+    entry = "pnpm typecheck:e2e",
+    language = "system",
+    pass_filenames = false,
+    files = "^(package\\.json|pnpm-lock\\.yaml|pnpm-workspace\\.yaml|playwright\\.config\\.ts|tsconfig\\.e2e\\.json|e2e/.*\\.ts)$",
+    stages = ["pre-push"],
+  },
 ]

@@ -23,6 +23,11 @@ just setup
 
 The equivalent native commands are available in the `Justfile`.
 
+The pre-commit hook formats and lints staged files. The pre-push hook runs
+backend and frontend type checks, unit tests that do not require Docker, and
+the E2E TypeScript check. Docker-backed integration tests and production smoke
+tests remain part of the complete checks and CI.
+
 ## Local development
 
 Start PostgreSQL in Docker:

@@ -25,7 +25,9 @@ jobs:
       - name: Check repository files
         run: >-
           uv run --frozen prek run
+          .:check-case-conflict
           .:check-json
+          .:check-merge-conflict
           .:check-toml
           .:check-yaml
           .:trailing-whitespace
