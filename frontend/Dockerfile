@@ -19,7 +19,7 @@ COPY frontend ./frontend
 
 RUN pnpm --filter frontend build
 
-FROM caddy:2.11.4-alpine
+FROM caddy:2.11.7-alpine
 
 COPY frontend/Caddyfile /etc/caddy/Caddyfile
 COPY --from=build --chown=65534:65534 /app/frontend/dist /srv
